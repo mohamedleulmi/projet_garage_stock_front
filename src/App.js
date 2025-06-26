@@ -1,24 +1,27 @@
-import logo from './logo.svg';
+
 import './App.css';
+import { Link, Route, Routes } from 'react-router-dom';
+import StockPage from './pages/StockPage';
+import NewInvoicePage from './pages/NewInvoicePage';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+  <>
+      <nav className="navbar navbar-expand-lg navbar-dark bg-dark px-3">
+      <a className="navbar-brand" href="/">GarageApp</a>
+      <div className="navbar-nav">
+          <Link className="nav-link" to="/">Stock</Link>
+          <Link className="nav-link" to="/facture">Nouvelle Facture</Link>
+          <Link className="nav-link" to="/historique">Historique</Link>
+        </div>
+      </nav>
+      <div className="container mt-4">
+        <Routes>
+        <Route path="/" element={<StockPage />} />
+        <Route path="/facture" element={<NewInvoicePage />} />
+        </Routes>
+      </div>
+      </>
   );
 }
 
