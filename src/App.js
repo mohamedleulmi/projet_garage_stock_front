@@ -2,7 +2,7 @@
 import './App.css';
 import { Link, Route, Routes } from 'react-router-dom';
 import StockPage from './pages/StockPage';
-import NewInvoicePage from './pages/NewInvoicePage';
+import FacturationPage from './pages/FacturationPage';
 
 function App() {
   return (
@@ -18,7 +18,7 @@ function App() {
       <div className="container mt-4">
         <Routes>
         <Route path="/" element={<StockPage />} />
-        <Route path="/facture" element={<NewInvoicePage />} />
+        <Route path="/facture" element={<FacturationPage />} />
         </Routes>
       </div>
       </>

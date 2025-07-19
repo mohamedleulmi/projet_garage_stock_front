@@ -1,15 +1,20 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { getProduits } from "../services/stockApi";
+import {createFacture} from "../services/invoiceService";
+import { findClients,createClient } from "../services/clientService";
+import ClientSelector from "./ClientSelector";
 
-function NewInvoicePage() {
+function FacturationPage() {
   const [produits, setProduits] = useState([]);
-  const [client, setClient] = useState({ nom: "", telephone: "", vehiculeImatriculation: "" });
+  const [client, setClient] = useState(null);
   const [lignesProduit, setLignesProduit] = useState([]);
   const [prestations, setPrestations] = useState([]);
   const [totaux, setTotaux] = useState({ totalHT: 0, totalTVA: 0, totalTTC: 0 });
 
   useEffect(() => {
-    axios.get("http://localhost:8080/api/produits").then((res) => setProduits(res.data));
+     getProduits()
+          .then((res) => setProduits(res.data))
+          .catch((err) => alert("Erreur lors du chargement des produits"));
   }, []);
 
   useEffect(() => {
@@ -51,6 +56,10 @@ function NewInvoicePage() {
     setPrestations(newPres);
   };
 
+  const handleClientSelected = (clientData) => {
+    setClient(clientData);
+  };
+
   const calculerTotaux = () => {
     const totalHT = lignesProduit.reduce((sum, l) => sum + l.totalHT, 0) + prestations.reduce((sum, p) => sum + p.prixHT, 0);
     const totalTVA = lignesProduit.reduce((sum, l) => sum + (l.totalHT * l.tva) / 100, 0) + prestations.reduce((sum, p) => (p.prixHT * p.tva) / 100, 0);
@@ -58,14 +67,16 @@ function NewInvoicePage() {
     setTotaux({ totalHT, totalTVA, totalTTC });
   };
 
-  const handleClientChange = (e) => {
-    setClient({ ...client, [e.target.name]: e.target.value });
-  };
 
-  const handleSubmit = () => {
+
+  const handleSubmit = async () => {
+     if (!client) {
+      alert("Veuillez sélectionner ou créer un client.");
+      return;
+    }
     const facture = {
-      client,
-      lignesProduit: lignesProduit.map((l) => ({
+        client,
+        lignesProduit: lignesProduit.map((l) => ({
         produit: { id: l.produitId },
         quantite: l.quantite,
         prixUnitaireHT: l.prixHT,
@@ -79,42 +90,73 @@ function NewInvoicePage() {
       totalTTC: totaux.totalTTC,
     };
 
-    axios.post("http://localhost:8080/api/factures", facture)
-      .then(() => alert("Facture créée !"))
-      .catch(() => alert("Erreur lors de la création"));
+    try {
+      await createFacture(facture);
+      alert("Facture créée !");
+    } catch (err) {
+      alert("Erreur lors de la création");
+    }
+
+
+   
   };
 
   return (
     <div className="container">
       <h2>Nouvelle Facture</h2>
-
-      <h5>Client</h5>
-      <input name="nom" placeholder="Nom" className="form-control" value={client.nom} onChange={handleClientChange} />
-      <input name="telephone" placeholder="Téléphone" className="form-control" value={client.telephone} onChange={handleClientChange} />
-      <input name="vehiculeImatriculation" placeholder="Immatriculation" className="form-control" value={client.vehiculeImatriculation} onChange={handleClientChange} />
+  
+      
+<ClientSelector onClientSelected={handleClientSelected} />
 
       <h5 className="mt-4">Produits</h5>
+      {/* En-tête des colonnes */}
+      <div className="row g-2 mb-2">
+        <div className="col"><strong>Produit</strong></div>
+        <div className="col"><strong>Quantité</strong></div>
+        <div className="col"><strong>Prix HT</strong></div>
+        <div className="col"><strong>TVA</strong></div>
+        <div className="col"><strong>Total TTC</strong></div>
+      </div>
+      {/* Lignes des produits */}
       {lignesProduit.map((ligne, index) => (
         <div key={index} className="row g-2 mb-2">
-          <select
-            className="form-control col"
-            value={ligne.produitId}
-            onChange={(e) => handleProduitChange(index, "produitId", e.target.value)}
-          >
-            <option value="">-- Produit --</option>
-            {produits.map((p) => (
-              <option key={p.id} value={p.id}>{p.designation}</option>
-            ))}
-          </select>
-          <input type="number" className="form-control col" placeholder="Quantité" value={ligne.quantite} onChange={(e) => handleProduitChange(index, "quantite", e.target.value)} />
-          <input type="number" className="form-control col" placeholder="Prix HT" value={ligne.prixHT} readOnly />
-          <input type="number" className="form-control col" placeholder="TVA" value={ligne.tva} readOnly />
-          <input type="number" className="form-control col" placeholder="Total TTC" value={ligne.totalTTC.toFixed(2)} readOnly />
+          <div className="col">
+            <select
+              className="form-control"
+              value={ligne.produitId}
+              onChange={(e) => handleProduitChange(index, "produitId", e.target.value)}
+            >
+              <option value="">-- Produit --</option>
+              {produits.map((p) => (
+                <option key={p.id} value={p.id}>{p.designation}</option>
+              ))}
+            </select>
+          </div>
+          <div className="col">
+            <input type="number" className="form-control" placeholder="Quantité" value={ligne.quantite} onChange={(e) => handleProduitChange(index, "quantite", e.target.value)} />
+          </div>
+          <div className="col">
+            <input type="number" className="form-control" placeholder="Prix HT" value={ligne.prixHT} readOnly />
+          </div>
+          <div className="col">
+            <input type="number" className="form-control" placeholder="TVA" value={ligne.tva} readOnly />
+          </div>
+          <div className="col">
+            <input type="number" className="form-control" placeholder="Total TTC" value={ligne.totalTTC.toFixed(2)} readOnly />
+          </div>
         </div>
       ))}
       <button className="btn btn-outline-primary" onClick={ajouterLigneProduit}>+ Produit</button>
-
+  
       <h5 className="mt-4">Prestations</h5>
+      {/* En-tête des colonnes */}
+      <div className="row g-2 mb-2">
+        <div className="col"><strong>services</strong></div>
+        <div className="col"><strong>Prix HT</strong></div>
+        <div className="col"><strong>TVA</strong></div>
+        <div className="col"><strong>Total TTC</strong></div>
+      </div>
+      {/* Lignes des produits */}
       {prestations.map((pres, index) => (
         <div key={index} className="row g-2 mb-2">
           <input className="form-control col" placeholder="Description" value={pres.description} onChange={(e) => handlePrestationChange(index, "description", e.target.value)} />
@@ -124,17 +166,17 @@ function NewInvoicePage() {
         </div>
       ))}
       <button className="btn btn-outline-secondary" onClick={ajouterPrestation}>+ Prestation</button>
-
+  
       <div className="mt-4">
         <h5>Totaux</h5>
         <p>Total HT : {totaux.totalHT.toFixed(2)} €</p>
         <p>Total TVA : {totaux.totalTVA.toFixed(2)} €</p>
         <p>Total TTC : <strong>{totaux.totalTTC.toFixed(2)} €</strong></p>
       </div>
-
+  
       <button className="btn btn-success mt-3" onClick={handleSubmit}>✅ Valider la facture</button>
     </div>
   );
 }
 
-export default NewInvoicePage;
+export default FacturationPage;
