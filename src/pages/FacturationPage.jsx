@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { getProduits } from "../services/stockApi";
-import { createFacture } from "../services/invoiceService";
+import { createFacture, getFacturePdf } from "../services/invoiceService";
 import ClientSelector from "./ClientSelector";
 
 function FacturationPage() {
@@ -9,6 +9,8 @@ function FacturationPage() {
   const [lignesProduit, setLignesProduit] = useState([]);
   const [prestations, setPrestations] = useState([]);
   const [totaux, setTotaux] = useState({ totalHT: 0, totalTVA: 0, totalTTC: 0 });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [factureCreee, setFactureCreee] = useState(null);
 
   useEffect(() => {
     getProduits()
@@ -94,6 +96,9 @@ function FacturationPage() {
       return;
     }
 
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
     const facture = {
       client,
       lignesProduit: lignesProduit.map((l) => ({
@@ -111,10 +116,23 @@ function FacturationPage() {
     };
 
     try {
-      await createFacture(facture);
+      const factureResponse = await createFacture(facture);
       alert("Facture créée !");
+      setFactureCreee(factureResponse.data);
+
+       // 2. Récupération du PDF depuis le back
+    const pdfResponse = await getFacturePdf(factureResponse.data.id);
+      const blob = new Blob([pdfResponse.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      window.open(url, "_blank");
+
+
     } catch (err) {
       alert("Erreur lors de la création de la facture");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -207,7 +225,9 @@ function FacturationPage() {
         <p>Total TTC : <strong>{totaux.totalTTC.toFixed(2)} €</strong></p>
       </div>
 
-      <button className="btn btn-success mt-3" onClick={handleSubmit}>✅ Valider la facture</button>
+      <button className="btn btn-success mt-3" onClick={handleSubmit} disabled={isSubmitting}>
+        {isSubmitting ? "Validation en cours..." : "Valider la facture"}
+      </button>
     </div>
   );
 }
