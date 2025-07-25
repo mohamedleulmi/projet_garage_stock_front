@@ -8,6 +8,7 @@ function ClientSelector({onClientSelected}) {
     const [showModal, setShowModal] = useState(false);
     const [newClient, setNewClient] = useState({
         nom: "",
+        prenom: "",
         telephone: "",
         vehiculeImatriculation: "",
     });
@@ -74,16 +75,53 @@ function ClientSelector({onClientSelected}) {
                                           onChange={(e) => setNewClient({...newClient, nom: e.target.value})}/>
                         </Form.Group>
                         <Form.Group className="mb-2">
+                            <Form.Label>Prenom</Form.Label>
+                            <Form.Control value={newClient.prenom}
+                                          onChange={(e) => setNewClient({...newClient, prenom: e.target.value})}/>
+                        </Form.Group>
+                        <Form.Group className="mb-2">
                             <Form.Label>Téléphone</Form.Label>
                             <Form.Control value={newClient.telephone}
                                           onChange={(e) => setNewClient({...newClient, telephone: e.target.value})}/>
                         </Form.Group>
                         <Form.Group>
                             <Form.Label>Immatriculation</Form.Label>
-                            <Form.Control value={newClient.vehiculeImatriculation} onChange={(e) => setNewClient({
-                                ...newClient,
-                                vehiculeImatriculation: e.target.value
-                            })}/>
+                            <Form.Control
+                                type="text"
+                                placeholder="Ex : GH-245-GE"
+                                value={newClient.vehiculeImatriculation}
+                                onChange={(e) => {
+                                    let raw = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+                                    // Formater automatiquement LL-NNN-LL
+                                    let formatted = "";
+                                    if (raw.length >= 2) {
+                                        formatted += raw.slice(0, 2);
+                                        if (raw.length >= 5) {
+                                            formatted += "-" + raw.slice(2, 5);
+                                            if (raw.length > 5) {
+                                                formatted += "-" + raw.slice(5, 7);
+                                            }
+                                        } else if (raw.length > 2) {
+                                            formatted += "-" + raw.slice(2);
+                                        }
+                                    } else {
+                                        formatted = raw;
+                                    }
+
+                                    setNewClient({
+                                        ...newClient,
+                                        vehiculeImatriculation: formatted
+                                    });
+                                }}
+                                isInvalid={
+                                    newClient.vehiculeImatriculation &&
+                                    !/^[A-Z]{2}-\d{3}-[A-Z]{2}$/.test(newClient.vehiculeImatriculation)
+                                }
+                            />
+                            <Form.Control.Feedback type="invalid">
+                                Format attendu : 2 lettres - 3 chiffres - 2 lettres (ex : GH-245-GE)
+                            </Form.Control.Feedback>
                         </Form.Group>
                     </Form>
                 </Modal.Body>

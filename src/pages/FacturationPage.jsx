@@ -92,13 +92,13 @@ function FacturationPage() {
 
         const facture = {
             client,
-            lignesProduit: lignesProduit.map((l) => ({
-                produit: {id: l.produit.id},
-                quantite: l.quantite,
-                prixUnitaireHT: l.produit.prixUnitaireHT,
-                tva: l.produit.tva,
-                totalHT: l.totalHT,
-                totalTTC: l.totalTTC
+            lignesProduit: lignesProduit.map((produitSelected) => ({
+                produit: {id: produitSelected.produit.id},
+                quantite: produitSelected.quantite,
+                prixUnitaireHT: produitSelected.produit.prixUnitaireHT,
+                tva: produitSelected.produit.tva,
+                totalHT: produitSelected.totalHT,
+                totalTTC: produitSelected.totalTTC
             })),
             lignesPrestation: prestations,
             totalHT: totaux.totalHT,
